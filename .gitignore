@@ -4,3 +4,6 @@
 *.SchDocPreview
 Altium/Project Outputs for satFloat/Design Rule Check - satFloat.html
 Altium/Project Outputs for satFloat/Design Rule Check - satFloat.drc
+*.PcbDocPreview
+*.PcbDocPreview
+*.PrjPCBStructure
