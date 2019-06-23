@@ -3,18 +3,23 @@
 // c 2019
 
 // To Do:
-// - set and test 5V supply
-// - read Voltage
-// - read GPS
+// - read GPS over second interface
 // - control VHF power
 // - set Time
 // - send GPS over Iridium
 // - sleep, trigger wake with timer and accelerometer
-// - trigger Iridium send based on accelerometer
 
 #include <Wire.h>
 #include <RTCZero.h>
 #include "LowPower.h"
+#include "wiring_private.h" // pinPeripheral() function
+
+// DEV SETTINGS
+int printDiags = 1;
+
+// Define Serial2 to talk to GPS
+// https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports/creating-a-new-serial
+Uart Serial2 (&sercom1, 11, 10, SERCOM_RX_PAD_0, UART_TX_PAD_2);
 
 // Pin Mapping Arduino Zero
 //https://github.com/arduino/ArduinoCore-samd/blob/master/variants/arduino_zero/variant.cpp
@@ -32,6 +37,14 @@
 /* Create an rtc object */
 RTCZero rtc;
 
+// GPS
+float latitude = 0.0;
+float longitude = 0.0;
+char latHem, lonHem;
+int gpsYear = 19, gpsMonth = 4, gpsDay = 17, gpsHour = 22, gpsMinute = 5, gpsSecond = 0;
+int goodGPS = 0;
+long gpsTimeOutThreshold = 600000;
+
 int16_t accelX, accelY, accelZ;
 
 void setup() {
@@ -40,6 +53,11 @@ void setup() {
   pinMode(ledGreen, OUTPUT);
   digitalWrite(ledGreen,LED_OFF);
   pinMode(vSense, INPUT);
+
+  // GPS Setup
+  // Assign pins 10 & 11 SERCOM functionality
+  pinPeripheral(10, PIO_SERCOM);
+  pinPeripheral(11, PIO_SERCOM);
 
   // Iridium setup
   pinMode(iPow, OUTPUT);
@@ -51,7 +69,23 @@ void setup() {
   Wire.begin();
   Wire.setClock(400);  // set I2C clock to 400 kHz
   rtc.begin();
-
+  gpsGetTimeLatLon();
+  if(goodGPS){
+    rtc.setTime(gpsHour, gpsMinute, gpsSecond);
+    rtc.setDate(gpsDay, gpsMonth, gpsYear);
+  }
+  else{
+    while(1){
+      digitalWrite(ledGreen, HIGH);
+      delay(150);
+      digitalWrite(ledGreen, LOW);
+      delay(50);
+    }
+    
+    
+  }
+  
+  
   accelInit(ADXL343_ADDRESS, 25, 0, 0);
 
 }
@@ -76,4 +110,9 @@ float readVoltage(){
   float vReg = 3.3;
   float voltage = (float) analogRead(vSense) * vReg / (vDivider * 1024.0);
   return voltage;
+}
+
+void SERCOM1_Handler()
+{
+  Serial2.IrqHandler();
 }
