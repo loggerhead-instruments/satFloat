@@ -3,7 +3,6 @@
 // c 2019
 
 // To Do:
-// - read GPS over second interface
 // - control VHF power
 // - set Time
 // - send GPS over Iridium
@@ -48,6 +47,14 @@ char latHem, lonHem;
 int gpsYear = 19, gpsMonth = 4, gpsDay = 17, gpsHour = 22, gpsMinute = 5, gpsSecond = 0;
 int goodGPS = 0;
 long gpsTimeOutThreshold = 600000;
+
+/* Change these values to set the current initial time and date */
+volatile byte second = 0;
+volatile byte minute = 0;
+volatile byte hour = 17;
+volatile byte day = 1;
+volatile byte month = 1;
+volatile byte year = 19;
 
 int16_t accelX, accelY, accelZ;
 
@@ -97,6 +104,7 @@ void setup() {
 
 void loop() {
   readAccel(ADXL343_ADDRESS);
+  printTime();
   SerialUSB.print(accelX);
   SerialUSB.print(' ');
   SerialUSB.print(accelY);
@@ -107,7 +115,6 @@ void loop() {
   SerialUSB.println('V');
   delay(100);
   
-
 }
 
 float readVoltage(){
@@ -115,4 +122,23 @@ float readVoltage(){
   float vReg = 3.3;
   float voltage = (float) analogRead(vSense) * vReg / (vDivider * 1024.0);
   return voltage;
+}
+
+void printTime(){
+  getTime();
+  SerialUSB.print(year); SerialUSB.print("-");
+  SerialUSB.print(month); SerialUSB.print("-");
+  SerialUSB.print(day); SerialUSB.print(" ");
+  SerialUSB.print(hour); SerialUSB.print(":");
+  SerialUSB.print(minute); SerialUSB.print(":");
+  SerialUSB.print(second); SerialUSB.print(" ");
+}
+
+void getTime(){
+  day = rtc.getDay();
+  month = rtc.getMonth();
+  year = rtc.getYear();
+  hour = rtc.getHours();
+  minute = rtc.getMinutes();
+  second = rtc.getSeconds();
 }
