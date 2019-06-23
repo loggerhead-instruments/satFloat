@@ -20,6 +20,10 @@ int printDiags = 1;
 // Define Serial2 to talk to GPS
 // https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports/creating-a-new-serial
 Uart Serial2 (&sercom1, 11, 10, SERCOM_RX_PAD_0, UART_TX_PAD_2);
+void SERCOM1_Handler()
+{
+  Serial2.IrqHandler();
+}
 
 // Pin Mapping Arduino Zero
 //https://github.com/arduino/ArduinoCore-samd/blob/master/variants/arduino_zero/variant.cpp
@@ -49,12 +53,14 @@ int16_t accelX, accelY, accelZ;
 
 void setup() {
   SerialUSB.begin(115200);
+  
   analogReference(AR_DEFAULT);
   pinMode(ledGreen, OUTPUT);
   digitalWrite(ledGreen,LED_OFF);
   pinMode(vSense, INPUT);
 
   // GPS Setup
+  Serial2.begin(9600);
   // Assign pins 10 & 11 SERCOM functionality
   pinPeripheral(10, PIO_SERCOM);
   pinPeripheral(11, PIO_SERCOM);
@@ -66,9 +72,9 @@ void setup() {
   digitalWrite(iEnable, LOW);
   
   delay(10000);
-  Wire.begin();
-  Wire.setClock(400);  // set I2C clock to 400 kHz
+
   rtc.begin();
+  SerialUSB.println("Loggerhead SatFloat");
   gpsGetTimeLatLon();
   if(goodGPS){
     rtc.setTime(gpsHour, gpsMinute, gpsSecond);
@@ -76,16 +82,15 @@ void setup() {
   }
   else{
     while(1){
-      digitalWrite(ledGreen, HIGH);
+      digitalWrite(ledGreen, LED_ON);
       delay(150);
-      digitalWrite(ledGreen, LOW);
+      digitalWrite(ledGreen, LED_OFF);
       delay(50);
     }
-    
-    
   }
   
-  
+  Wire.begin();
+  Wire.setClock(400);  // set I2C clock to 400 kHz
   accelInit(ADXL343_ADDRESS, 25, 0, 0);
 
 }
@@ -110,9 +115,4 @@ float readVoltage(){
   float vReg = 3.3;
   float voltage = (float) analogRead(vSense) * vReg / (vDivider * 1024.0);
   return voltage;
-}
-
-void SERCOM1_Handler()
-{
-  Serial2.IrqHandler();
 }

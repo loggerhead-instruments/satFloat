@@ -14,9 +14,9 @@ int gps(byte incomingByte){
   // check for start of new message, which means should have complete message
   // if a $, start it at Pos 0, and continue until next G
   if(incomingByte=='$') {
-   // Serial.print("String position:");
-   // Serial.println(streamPos);
-   // Serial.println(gpsStream);
+   // SerialUSB.print("String position:");
+   // SerialUSB.println(streamPos);
+   // SerialUSB.println(gpsStream);
     //process last message
     if(streamPos > 10){
       // OriginGPS
@@ -54,9 +54,9 @@ int gps(byte incomingByte){
        char *token;
 
        if(printDiags){
-         Serial.println("gpsStream");
-         Serial.println(gpsStream);
-         Serial.println();
+         SerialUSB.println("gpsStream");
+         SerialUSB.println(gpsStream);
+         SerialUSB.println();
        }
 
 
@@ -66,13 +66,13 @@ int gps(byte incomingByte){
        int k = 0;
        // parse GPS Stream
        for(int i=0; i<streamPos; i++){
-        //Serial.print("NextVal:");
-        //Serial.println(gpsStream[i]);
+        //SerialUSB.print("NextVal:");
+        //SerialUSB.println(gpsStream[i]);
         if(gpsStream[i]!=',') 
           splitStr[j][k] = gpsStream[i];
         else{
           splitStr[j][k] = '\0';
-          //Serial.println(splitStr[j]);
+          //SerialUSB.println(splitStr[j]);
           k = -1;  // so ends up being 0 after k++
           j++;
         }
@@ -81,7 +81,7 @@ int gps(byte incomingByte){
        splitStr[j][k] = '\0'; // terminate last one
 
 //        for(int i=0; i<12; i++){
-//          Serial.println(splitStr[i]);
+//          SerialUSB.println(splitStr[i]);
 //        }
        
        sscanf(splitStr[1], "%2d%2d%2d", &gpsHour, &gpsMinute, &gpsSecond); 
@@ -93,31 +93,31 @@ int gps(byte incomingByte){
        sscanf(splitStr[9], "%2d%2d%2d", &gpsDay, &gpsMonth, &gpsYear);
 
        if(printDiags){
-        Serial.print("rmcCode:");
-        Serial.println(rmcCode);
+        SerialUSB.print("rmcCode:");
+        SerialUSB.println(rmcCode);
 
-        Serial.print("rmcValid:");
-        Serial.println(rmcValid);
+        SerialUSB.print("rmcValid:");
+        SerialUSB.println(rmcValid);
 
-        Serial.print("rmcLat:");
-        Serial.println(rmcLat, 6);
+        SerialUSB.print("rmcLat:");
+        SerialUSB.println(rmcLat, 6);
 
-        Serial.print("rmcLatHem:");
-        Serial.println(rmcLatHem);
+        SerialUSB.print("rmcLatHem:");
+        SerialUSB.println(rmcLatHem);
 
-        Serial.print("rmcLon:");
-        Serial.println(rmcLon, 6);
+        SerialUSB.print("rmcLon:");
+        SerialUSB.println(rmcLon, 6);
 
-        Serial.print("rmcLonHem:");
-        Serial.println(rmcLonHem);
+        SerialUSB.print("rmcLonHem:");
+        SerialUSB.println(rmcLonHem);
 
-        Serial.print("Day-Month-Year:");
-        Serial.print(gpsDay); Serial.print("-");
-        Serial.print(gpsMonth);  Serial.print("-");
-        Serial.println(gpsYear);
+        SerialUSB.print("Day-Month-Year:");
+        SerialUSB.print(gpsDay); SerialUSB.print("-");
+        SerialUSB.print(gpsMonth);  SerialUSB.print("-");
+        SerialUSB.println(gpsYear);
 
-        Serial.print("rmcCheckSum:");     
-        Serial.println(rmcChecksum);          
+        SerialUSB.print("rmcCheckSum:");     
+        SerialUSB.println(rmcChecksum);          
        }
        
 
@@ -133,10 +133,10 @@ int gps(byte incomingByte){
            longitude = convertDegMinToDecDeg(tempLongitude);
            goodGPS = 1;
            if(printDiags) {
-            Serial.print("Lt:");
-            Serial.print(latitude);
-            Serial.print(" Ln:");
-            Serial.println(longitude);
+            SerialUSB.print("Lt:");
+            SerialUSB.print(latitude);
+            SerialUSB.print(" Ln:");
+            SerialUSB.println(longitude);
            }
         }
       }
@@ -178,26 +178,10 @@ void waitForGPS(){
     delay(20);
     while (Serial2.available() > 0) {    
         byte incomingByte = Serial2.read();
-        Serial.write(incomingByte);
+        SerialUSB.write(incomingByte);
     }
   }
 }
-
-//int gpsDumpLogger(){
-//  // open file for storing data; append
-//  endGpsLog = 0;
-//   Serial2.println(PMTK_LOCUS_DUMP);
-//   int dumping = 1;
-//   while(endGpsLog==0){
-//       while (Serial2.available() > 0) {    
-//        byte incomingByte = Serial2.read();
-//        gps(incomingByte);
-//        Serial.write(incomingByte);
-//       }
-//    if(gpsTimeout >= gpsTimeOutThreshold) return 0;
-//   }
-//   return 1;
-//}
 
 double convertDegMinToDecDeg(float degMin) {
   double min = 0.0;
@@ -224,18 +208,20 @@ void gpsGetTimeLatLon(){
   
   // can't display GPS data here, because display slows things down too much
   while((!goodGPS) & (millis()-gpsTimeOutStart<gpsTimeOutThreshold)){
+    digitalWrite(ledGreen, LED_ON);
     while (Serial2.available() > 0) {    
         incomingByte = Serial2.read();
-        Serial.write(incomingByte);
+        SerialUSB.write(incomingByte);
         gps(incomingByte);  // parse incoming GPS data
     }
+    digitalWrite(ledGreen, LED_OFF);
   }
 
-  Serial.print("GPS search time:");
-  Serial.println(millis()-gpsTimeOutStart);
+  SerialUSB.print("GPS search time:");
+  SerialUSB.println(millis()-gpsTimeOutStart);
   
-  Serial.print("Good GPS:");
-  Serial.println(goodGPS);
+  SerialUSB.print("Good GPS:");
+  SerialUSB.println(goodGPS);
 }
 
 
@@ -351,13 +337,13 @@ static const int len_ubxVer = 4;
 void sendUBX(const uint8_t *message, const int len) {
   int csum1 = 0; // Checksum bytes
   int csum2 = 0;
-  Serial.print("Sending UBX packet: 0x");
+  SerialUSB.print("Sending UBX packet: 0x");
   for (int i=0; i<len; i++) { // For each byte in the message
     Serial2.write(message[i]); // Write the byte
 
-    if (message[i] < 16) {Serial.print("0");}
-    Serial.print(message[i], HEX);
-    Serial.print(", 0x");
+    if (message[i] < 16) {SerialUSB.print("0");}
+    SerialUSB.print(message[i], HEX);
+    SerialUSB.print(", 0x");
 
     if (i >= 2) { // Don't include the sync chars in the checksum
       csum1 = csum1 + message[i]; // Update the checksum bytes
@@ -370,11 +356,11 @@ void sendUBX(const uint8_t *message, const int len) {
   Serial2.write((uint8_t)csum2);
   Serial2.flush();
 
-  if (csum1 < 16) {Serial.print("0");}
-  Serial.print((uint8_t)csum1, HEX);
-  Serial.print(", 0x");
-  if (csum2 < 16) {Serial.print("0");}
-  Serial.println((uint8_t)csum2, HEX);
+  if (csum1 < 16) {SerialUSB.print("0");}
+  SerialUSB.print((uint8_t)csum1, HEX);
+  SerialUSB.print(", 0x");
+  if (csum2 < 16) {SerialUSB.print("0");}
+  SerialUSB.println((uint8_t)csum2, HEX);
 }
 
 
@@ -405,24 +391,24 @@ void gpsInit(){
   delay(50);
   downloadSerialHex();
   
-  Serial.println("Set Nav");
+  SerialUSB.println("Set Nav");
   sendUBX(setNavSea, len_setNav);
-  Serial.println();
+  SerialUSB.println();
   delay(800);
-  Serial.println("Response:");
+  SerialUSB.println("Response:");
   downloadSerialHex();
 
 
 //  sendUBX(setLP, len_setLP);
-//  Serial.println();
+//  SerialUSB.println();
 //  delay(800);
-//  Serial.println("Response:");
+//  SerialUSB.println("Response:");
 //  downloadSerialHex();
 
 //  sendUBX(setPMREQ, len_setPMREQ);
-//  Serial.println("Set power management");
+//  SerialUSB.println("Set power management");
 //  delay(800);
-//  Serial.println("Response:");
+//  SerialUSB.println("Response:");
 //  downloadSerialHex();
 
   Serial2.println("$PUBX,40,RMC,0,1,0,0*46"); // Enable RMC
@@ -433,29 +419,29 @@ void gpsInit(){
 void downloadSerialHex(){
     while (Serial2.available() > 0) {    
         uint8_t incomingByte = Serial2.read();
-        //Serial.write(incomingByte);
-        Serial.print(incomingByte, HEX);
-        Serial.print(" ");
+        //SerialUSB.write(incomingByte);
+        SerialUSB.print(incomingByte, HEX);
+        SerialUSB.print(" ");
     }
-    Serial.println();
+    SerialUSB.println();
 }
 
 
 void gpsLowPower(){
-  //Serial.println("Set PMS 1 Hz");
+  //SerialUSB.println("Set PMS 1 Hz");
 
-  Serial.println("Set Nav");
+  SerialUSB.println("Set Nav");
   sendUBX(setNavSea, len_setNav);
-  Serial.println();
+  SerialUSB.println();
   delay(800);
-  Serial.println("Response:");
+  SerialUSB.println("Response:");
   downloadSerialHex();
 
-  Serial.println("setPMS");
+  SerialUSB.println("setPMS");
   sendUBX(setPMS, len_setPMS);
   //sendUBX(setPMREQ, len_setPMREQ);
-  Serial.println();
+  SerialUSB.println();
   delay(800);
-  Serial.println("Response:");
+  SerialUSB.println("Response:");
   downloadSerialHex();
 }
