@@ -215,6 +215,7 @@ void gpsGetTimeLatLon(){
         gps(incomingByte);  // parse incoming GPS data
     }
     digitalWrite(ledGreen, LED_OFF);
+    delay(10);
   }
 
   SerialUSB.print("GPS search time:");
