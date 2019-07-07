@@ -27,7 +27,7 @@ void SERCOM1_Handler()
 //https://github.com/arduino/ArduinoCore-samd/blob/master/variants/arduino_zero/variant.cpp
 #define ledGreen 5
 #define iPow A0           //PA02
-#define iAVAILABLE AREF   //PA03  change this t0 pin 7 (PB08 A1) or pin 8 (PB09 A2)
+#define iAVAILABLE A2   //PA03  change this t0 pin 7 (PB08 A1) or pin 8 (PB09 A2)
 #define vSense A4         // PA04
 #define iEnable 9         //PA07
 #define VHF A5            //PB03  not assigned -- change to 47, which is A5 PB02
