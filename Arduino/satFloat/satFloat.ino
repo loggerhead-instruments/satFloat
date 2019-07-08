@@ -33,6 +33,7 @@ void SERCOM1_Handler()
 #define iEnable 9         // PA07
 #define VHF A5            // PB02
 #define gpsEnable 8       // PA06
+#define ACCELINT1 7       // Accelerometer interrupt 1
 
 #define LED_ON LOW
 #define LED_OFF HIGH
@@ -42,7 +43,7 @@ void SERCOM1_Handler()
 RTCZero rtc;
 
 // Iridium
-IridiumSBD modem(Serial1);
+IridiumSBD modem(Serial1, iEnable);
 int sigStrength;
 
 // GPS
@@ -64,32 +65,43 @@ volatile byte year = 19;
 int16_t accelX, accelY, accelZ;
 
 void setup() {
+  delay(10000);
   SerialUSB.begin(115200);
-  delay(5000);
+  delay(1000);
   SerialUSB.println("OpenSat");
-  delay(5000);
+  delay(1000);
 
   analogReference(AR_DEFAULT);
   pinMode(ledGreen, OUTPUT);
-  digitalWrite(ledGreen, LED_ON);
+
+  pinMode(ACCELINT1, INPUT);
+  
   pinMode(vSense, INPUT);
   pinMode(gpsEnable, OUTPUT);
   digitalWrite(gpsEnable, LOW);
 
-  // GPS Setup
-  Serial2.begin(9600);
-  // Assign pins 10 & 11 SERCOM functionality
-  pinPeripheral(10, PIO_SERCOM);
-  pinPeripheral(11, PIO_SERCOM);
-
-  // Iridium setup
+// Iridium setup
   pinMode(iPow, OUTPUT);
   pinMode(iEnable, OUTPUT);
   digitalWrite(iPow, HIGH);
   digitalWrite(iEnable, HIGH);
+  delay(3000);
+  digitalWrite(ledGreen, LED_ON);
+  
   Serial1.begin(19200);  //Iridium
-//  
-//  //modem.setPowerProfile(IridiumSBD::DEFAULT_POWER_PROFILE);
+
+//  while(1){
+//    while(Serial1.available()){
+//      byte data = Serial1.read();
+//      SerialUSB.write(data);
+//    }
+//    delay(5000);
+//  Serial1.write('A');
+//  Serial1.write('T');
+//  Serial1.write(0x0D);
+//  }
+ 
+  //modem.setPowerProfile(IridiumSBD::DEFAULT_POWER_PROFILE);
   int result = modem.begin();
   if (result != ISBD_SUCCESS)
   {
@@ -97,36 +109,43 @@ void setup() {
     SerialUSB.println(result);
     if (result == ISBD_NO_MODEM_DETECTED)
       SerialUSB.println("No modem detected: check wiring.");
-    return;
   }
   modem.getSignalQuality(sigStrength); // update Iridium modem strength
   SerialUSB.print("Signal Strength:");
   SerialUSB.println(sigStrength);
-  
+
+  // GPS Setup
+  Serial2.begin(9600);
+  // Assign pins 10 & 11 SERCOM functionality
+  pinPeripheral(10, PIO_SERCOM);
+  pinPeripheral(11, PIO_SERCOM);
+
   rtc.begin();
   SerialUSB.println("Loggerhead SatFloat");
-  gpsGetTimeLatLon();
-  if(goodGPS){
-    rtc.setTime(gpsHour, gpsMinute, gpsSecond);
-    rtc.setDate(gpsDay, gpsMonth, gpsYear);
-  }
-  else{
-    while(1){
-      digitalWrite(ledGreen, LED_ON);
-      delay(150);
-      digitalWrite(ledGreen, LED_OFF);
-      delay(50);
-    }
-  }
-  
+ // gpsGetTimeLatLon();
+//  if(goodGPS){
+//    rtc.setTime(gpsHour, gpsMinute, gpsSecond);
+//    rtc.setDate(gpsDay, gpsMonth, gpsYear);
+//  }
+//  else{
+//    while(1){
+//      digitalWrite(ledGreen, LED_ON);
+//      delay(150);
+//      digitalWrite(ledGreen, LED_OFF);
+//      delay(50);
+//    }
+//  }
+//  
   Wire.begin();
   Wire.setClock(400);  // set I2C clock to 400 kHz
-  accelInit(ADXL343_ADDRESS, 25, 0, 0);
+  accelInit(ADXL343_ADDRESS, 0, 0);
+  attachInterrupt(ACCELINT1, wakeUp, HIGH);
+  Read_Accel_Int(ADXL343_ADDRESS);
 }
 
 void loop() {
-  readAccel(ADXL343_ADDRESS);
-  printTime();
+  readAccel(ADXL343_ADDRESS);  // this will clear interrupt
+ // printTime();
   SerialUSB.print(accelX);
   SerialUSB.print(' ');
   SerialUSB.print(accelY);
@@ -135,17 +154,22 @@ void loop() {
   SerialUSB.print(' ');
   SerialUSB.print(readVoltage());
   SerialUSB.println('V');
-  delay(100);
-
-  // tag is mostly vertical; try to get GPS and send
-  if(accelX>130){
-    gpsGetTimeLatLon();
-    makeDataPacket();
-    if(sendIridium){
-      sendDataPacket();
-    }
-    delay(10000); // sleep here for 10 minutes
-  }
+  delay(1000);
+//
+//  // tag is mostly vertical; try to get GPS and send
+//  if(accelX>130){
+//    gpsGetTimeLatLon();
+//    makeDataPacket();
+//    if(sendIridium){
+//      sendDataPacket();
+//    }
+//  }
+//  USBDevice.detach();
+//  digitalWrite(ledGreen, LED_OFF);
+//   LowPower.standby();
+//  // .... Sleeping ... //
+//  USBDevice.attach();
+//  while(!SerialUSB);
 }
 
 float readVoltage(){
@@ -172,4 +196,11 @@ void getTime(){
   hour = rtc.getHours();
   minute = rtc.getMinutes();
   second = rtc.getSeconds();
+}
+
+void wakeUp(){
+  digitalWrite(ledGreen, LED_ON);
+  delay(100);
+  digitalWrite(ledGreen, LED_OFF);
+  Read_Accel_Int(ADXL343_ADDRESS);
 }

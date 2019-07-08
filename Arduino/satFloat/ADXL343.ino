@@ -1,4 +1,4 @@
-void accelInit(int AccelAddress, float srate, boolean lowpower, byte threshold)
+void accelInit(int AccelAddress, boolean lowpower, byte threshold)
 {
  Wire.beginTransmission(AccelAddress);
   Wire.write(0x2D);  // power register
@@ -6,10 +6,10 @@ void accelInit(int AccelAddress, float srate, boolean lowpower, byte threshold)
   Wire.endTransmission();
   delay(5);
   Wire.beginTransmission(AccelAddress);
-  Wire.write(0x31);  // Data format register
+ // Wire.write(0x31);  // Data format register
  // Wire.write(0x08);  // set to 2g
  // Wire.write(0x0F); //Full_resolution mode, left-justified (MSB), +/-16g
- Wire.write(0x2B); //Full_resolution mode, sign bit, +/-16g, INT_LOW
+  //Wire.write(0x2B); //Full_resolution mode, sign bit, +/-16g, INT_LOW
   Wire.endTransmission();
   delay(5);  
 
@@ -20,18 +20,13 @@ void accelInit(int AccelAddress, float srate, boolean lowpower, byte threshold)
 // 100 Hz: 1010 0x0A 10
 // 50 Hz: 1001  0x09  9
 // 25 Hz: 1000  0x08  8
+// 0.1 Hz: 0000 0x00  0
 
 // Bit 5 low power mode (lower power, but higher noise) 0=normal
   Wire.beginTransmission(AccelAddress);
   Wire.write(0x2C);  // Rate
-  // set to next higher sample rate on compass
- int ratecode=8;  //default to 25 Hz
- if (srate>25) ratecode=9;
- if (srate>50) ratecode=10;
- if (srate>100) ratecode=11;
- if (srate>200) ratecode=12;
- if (srate>400) ratecode=13;
- ratecode = ratecode | (lowpower<<4);
+  int ratecode = 1; // 
+  ratecode = ratecode | (lowpower<<4);
   Wire.write(ratecode );  // set to 800Hz, normal operation
   Wire.endTransmission();
   delay(5);
@@ -48,13 +43,15 @@ void accelInit(int AccelAddress, float srate, boolean lowpower, byte threshold)
   
   Wire.beginTransmission(AccelAddress);
   Wire.write(0x2F);  // INT_MAP register
-  Wire.write(0x08);  // INT_MAP D4=Activity=0 = INT1, D3=Inactivity=1=INT2
+  //Wire.write(0x08);  // INT_MAP D4=Activity=0 = INT1, D3=Inactivity=1=INT2
+  Wire.write(0x7F); // INT_MAP DATA_READY=0 (INT1); everything else = 1 (INT2)
   Wire.endTransmission();
   
   // motion interrupt enable
   Wire.beginTransmission(AccelAddress);
   Wire.write(0x2e);  // INT_ENABLE address
-  Wire.write(0x18);  // INT_ENABLE D4=Activity, D3=Inactivity
+  //Wire.write(0x18);  // INT_ENABLE D4=Activity, D3=Inactivity
+  Wire.write(0x80);  // INT_ENABLE DATA_READY
   Wire.endTransmission();
   delay(5);
 }
