@@ -25,8 +25,16 @@
 #include "IridiumSBD.h"
 
 // DEV SETTINGS
-int printDiags = 1;
+int printDiags = 0;
+int sleepMode = 1;  // =1 sleep with accelerometer waking; =0 to debug
 boolean sendIridium = 1;
+// interrupt is every 5 seconds
+// so 10 min = 600 s = 120 interrupts
+int nInterrupts = 120;
+
+
+
+
 // Define Serial2 to talk to GPS
 // https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports/creating-a-new-serial
 Uart Serial2 (&sercom1, 11, 10, SERCOM_RX_PAD_0, UART_TX_PAD_2);
@@ -57,10 +65,11 @@ RTCZero rtc;
 // Iridium
 IridiumSBD modem(Serial1, iEnable);
 int sigStrength;
+int intCounter = 0;  // used to count number of interrupts; so only send Iridium every 10 minutes
 
 // GPS
-float latitude = 0.0;
-float longitude = 0.0;
+volatile float latitude = 0.0;
+volatile float longitude = 0.0;
 char latHem, lonHem;
 int gpsYear = 19, gpsMonth = 4, gpsDay = 17, gpsHour = 22, gpsMinute = 5, gpsSecond = 0;
 int goodGPS = 0;
@@ -135,20 +144,20 @@ void setup() {
   pinPeripheral(11, PIO_SERCOM);
 
   rtc.begin();
- // gpsGetTimeLatLon();
-//  if(goodGPS){
-//    rtc.setTime(gpsHour, gpsMinute, gpsSecond);
-//    rtc.setDate(gpsDay, gpsMonth, gpsYear);
-//  }
-//  else{
-//    while(1){
-//      digitalWrite(ledGreen, LED_ON);
-//      delay(150);
-//      digitalWrite(ledGreen, LED_OFF);
-//      delay(50);
-//    }
-//  }
-//  
+  gpsGetTimeLatLon();
+  if(goodGPS){
+    rtc.setTime(gpsHour, gpsMinute, gpsSecond);
+    rtc.setDate(gpsDay, gpsMonth, gpsYear);
+  }
+  else{
+    while(1){
+      digitalWrite(ledGreen, LED_ON);
+      delay(150);
+      digitalWrite(ledGreen, LED_OFF);
+      delay(50);
+    }
+  }
+  
   Wire.begin();
   Wire.setClock(400);  // set I2C clock to 400 kHz
   accelInit(ADXL343_ADDRESS, 0, 0);
@@ -156,10 +165,7 @@ void setup() {
   Read_Accel_Int(ADXL343_ADDRESS);
 }
 
-int intCounter = 0;  // used to count number of interrupts; so only send Iridium every 10 minutes
-// interrupt is every 5 seconds
-// so 10 min = 600 s = 120 interrupts
-int nInterrupts = 12;
+
 void loop() {
   readAccel(ADXL343_ADDRESS);
  // printTime();
@@ -176,10 +182,7 @@ void loop() {
   // tag is mostly vertical; try to get GPS and send
   if(accelX>130 & intCounter>nInterrupts){
     intCounter = 0;
-//    if(printDiags){
-//      USBDevice.attach();
-//      while(!SerialUSB);
-//    }
+
     digitalWrite(iPow, HIGH);  // Iridium on
     digitalWrite(iEnable, HIGH);
     gpsGetTimeLatLon();
@@ -189,13 +192,15 @@ void loop() {
     }
     digitalWrite(iPow, LOW);  // Iridium off
     digitalWrite(iEnable, LOW);
-//    if(printDiags){
-//      USBDevice.detach();
-//    }
   }
 
   digitalWrite(ledGreen, LED_OFF);
-  LowPower.standby();
+  if(sleepMode){
+    LowPower.standby();
+  }
+  else{
+    delay(5000);
+  }
   // .... Sleeping ... //
 
 }

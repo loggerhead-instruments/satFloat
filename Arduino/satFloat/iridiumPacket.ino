@@ -7,7 +7,7 @@ void makeDataPacket(){
 //  dataPacket = "";
 //  dataPacket += packetTime;
 //  dataPacket += ";";
-
+  dataPacket = "";
   dataPacket += String(latitude, 4);
   dataPacket += ";";
   dataPacket += String(longitude, 4);
