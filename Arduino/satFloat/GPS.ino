@@ -203,6 +203,8 @@ void gpsGetTimeLatLon(){
   int incomingByte;
   long gpsTimeOutStart = millis();
 
+  digitalWrite(gpsEnable, HIGH);
+  delay(200);
   goodGPS = 0;
   gpsInit();
   
@@ -223,6 +225,8 @@ void gpsGetTimeLatLon(){
   
   SerialUSB.print("Good GPS:");
   SerialUSB.println(goodGPS);
+
+  digitalWrite(gpsEnable, LOW);
 }
 
 

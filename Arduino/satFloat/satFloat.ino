@@ -3,21 +3,22 @@
 // c 2019
 
 // To Do:
-// - control VHF power
-// - send GPS over Iridium
+// - send GPS over Iridium every 10 minutes on active
 // - sleep, trigger wake with timer and accelerometer
 
 #include <Wire.h>
 #include <RTCZero.h>
 #include "LowPower.h"
 #include "wiring_private.h" // pinPeripheral() function
+#include "IridiumSBD.h"
 
 // DEV SETTINGS
 int printDiags = 1;
-
+boolean sendIridium = 1;
 // Define Serial2 to talk to GPS
 // https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports/creating-a-new-serial
 Uart Serial2 (&sercom1, 11, 10, SERCOM_RX_PAD_0, UART_TX_PAD_2);
+
 void SERCOM1_Handler()
 {
   Serial2.IrqHandler();
@@ -26,11 +27,11 @@ void SERCOM1_Handler()
 // Pin Mapping Arduino Zero
 //https://github.com/arduino/ArduinoCore-samd/blob/master/variants/arduino_zero/variant.cpp
 #define ledGreen 5
-#define iPow A0           //PA02
-#define iAVAILABLE A2   //PA03  change this t0 pin 7 (PB08 A1) or pin 8 (PB09 A2)
+#define iPow A0           // PA02
+#define iAVAILABLE A2     // PA03  change this t0 pin 7 (PB08 A1) or pin 8 (PB09 A2)
 #define vSense A4         // PA04
-#define iEnable 9         //PA07
-#define VHF A5            //PB03  not assigned -- change to 47, which is A5 PB02
+#define iEnable 9         // PA07
+#define VHF A5            // PB02
 #define gpsEnable 8       // PA06
 
 #define LED_ON LOW
@@ -39,6 +40,10 @@ void SERCOM1_Handler()
 
 /* Create an rtc object */
 RTCZero rtc;
+
+// Iridium
+IridiumSBD modem(Serial1);
+int sigStrength;
 
 // GPS
 float latitude = 0.0;
@@ -60,11 +65,16 @@ int16_t accelX, accelY, accelZ;
 
 void setup() {
   SerialUSB.begin(115200);
-  
+  delay(5000);
+  SerialUSB.println("OpenSat");
+  delay(5000);
+
   analogReference(AR_DEFAULT);
   pinMode(ledGreen, OUTPUT);
-  digitalWrite(ledGreen,LED_OFF);
+  digitalWrite(ledGreen, LED_ON);
   pinMode(vSense, INPUT);
+  pinMode(gpsEnable, OUTPUT);
+  digitalWrite(gpsEnable, LOW);
 
   // GPS Setup
   Serial2.begin(9600);
@@ -75,11 +85,24 @@ void setup() {
   // Iridium setup
   pinMode(iPow, OUTPUT);
   pinMode(iEnable, OUTPUT);
-  digitalWrite(iPow, LOW);
-  digitalWrite(iEnable, LOW);
+  digitalWrite(iPow, HIGH);
+  digitalWrite(iEnable, HIGH);
+  Serial1.begin(19200);  //Iridium
+//  
+//  //modem.setPowerProfile(IridiumSBD::DEFAULT_POWER_PROFILE);
+  int result = modem.begin();
+  if (result != ISBD_SUCCESS)
+  {
+    SerialUSB.print("Begin failed: error ");
+    SerialUSB.println(result);
+    if (result == ISBD_NO_MODEM_DETECTED)
+      SerialUSB.println("No modem detected: check wiring.");
+    return;
+  }
+  modem.getSignalQuality(sigStrength); // update Iridium modem strength
+  SerialUSB.print("Signal Strength:");
+  SerialUSB.println(sigStrength);
   
-  delay(10000);
-
   rtc.begin();
   SerialUSB.println("Loggerhead SatFloat");
   gpsGetTimeLatLon();
@@ -99,7 +122,6 @@ void setup() {
   Wire.begin();
   Wire.setClock(400);  // set I2C clock to 400 kHz
   accelInit(ADXL343_ADDRESS, 25, 0, 0);
-
 }
 
 void loop() {
@@ -114,7 +136,16 @@ void loop() {
   SerialUSB.print(readVoltage());
   SerialUSB.println('V');
   delay(100);
-  
+
+  // tag is mostly vertical; try to get GPS and send
+  if(accelX>130){
+    gpsGetTimeLatLon();
+    makeDataPacket();
+    if(sendIridium){
+      sendDataPacket();
+    }
+    delay(10000); // sleep here for 10 minutes
+  }
 }
 
 float readVoltage(){
