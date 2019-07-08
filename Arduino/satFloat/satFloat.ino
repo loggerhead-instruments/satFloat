@@ -2,9 +2,21 @@
 // Loggerhead Instruments
 // c 2019
 
+// Iridium ISU module needs to be configured for 3-wire (UART) operation
+// Configuration is done using serial connection (e.g. FTDI board)
+// Connections: TX-TX, RX-RX, DTR-DTR, CTS-CTS, GND-SG (signal ground)
+// AT&D0   (ignore DTR)
+// AT&K0   (ignore CTS)
+// AT&W0   (store active configuration to memory)
+// AT&Y0   (designate as default reset profile)
+
+// Commands must have a carriage return \r, not a line feed
+// "AT\r"
+
 // To Do:
-// - measure current draw
 // - send less often when voltage gets low
+
+// current draw around 0.4 mA in monitoring mode
 
 #include <Wire.h>
 #include <RTCZero.h>
@@ -90,17 +102,17 @@ void setup() {
   
   Serial1.begin(19200);  //Iridium
 
-//  while(1){
-//    while(Serial1.available()){
-//      byte data = Serial1.read();
-//      SerialUSB.write(data);
-//    }
-//    delay(5000);
-//  Serial1.write('A');
-//  Serial1.write('T');
-//  Serial1.write(0x0D);
-//  }
- 
+// Quick Iridium modem test
+  Serial1.write('A');
+  Serial1.write('T');
+  Serial1.write(0x0D);
+
+  delay(1000);
+  while(Serial1.available()){
+    byte data = Serial1.read();
+    SerialUSB.write(data);
+  }
+  
   //modem.setPowerProfile(IridiumSBD::DEFAULT_POWER_PROFILE);
   int result = modem.begin();
   if (result != ISBD_SUCCESS)
@@ -123,7 +135,6 @@ void setup() {
   pinPeripheral(11, PIO_SERCOM);
 
   rtc.begin();
-  SerialUSB.println("Loggerhead SatFloat");
  // gpsGetTimeLatLon();
 //  if(goodGPS){
 //    rtc.setTime(gpsHour, gpsMinute, gpsSecond);
@@ -182,12 +193,11 @@ void loop() {
 //      USBDevice.detach();
 //    }
   }
-//  USBDevice.detach();
+
   digitalWrite(ledGreen, LED_OFF);
   LowPower.standby();
   // .... Sleeping ... //
-//  USBDevice.attach();
-//  while(!SerialUSB);
+
 }
 
 float readVoltage(){
