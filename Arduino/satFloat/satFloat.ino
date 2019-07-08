@@ -3,8 +3,8 @@
 // c 2019
 
 // To Do:
-// - send GPS over Iridium every 10 minutes on active
-// - sleep, trigger wake with timer and accelerometer
+// - measure current draw
+// - send less often when voltage gets low
 
 #include <Wire.h>
 #include <RTCZero.h>
@@ -113,6 +113,8 @@ void setup() {
   modem.getSignalQuality(sigStrength); // update Iridium modem strength
   SerialUSB.print("Signal Strength:");
   SerialUSB.println(sigStrength);
+  digitalWrite(iPow, LOW);  // power down Iridium
+  digitalWrite(iEnable, LOW);
 
   // GPS Setup
   Serial2.begin(9600);
@@ -143,31 +145,47 @@ void setup() {
   Read_Accel_Int(ADXL343_ADDRESS);
 }
 
+int intCounter = 0;  // used to count number of interrupts; so only send Iridium every 10 minutes
+// interrupt is every 5 seconds
+// so 10 min = 600 s = 120 interrupts
+int nInterrupts = 12;
 void loop() {
-  readAccel(ADXL343_ADDRESS);  // this will clear interrupt
+  readAccel(ADXL343_ADDRESS);
  // printTime();
-  SerialUSB.print(accelX);
-  SerialUSB.print(' ');
-  SerialUSB.print(accelY);
-  SerialUSB.print(' ');
-  SerialUSB.print(accelZ);
-  SerialUSB.print(' ');
-  SerialUSB.print(readVoltage());
-  SerialUSB.println('V');
-  delay(1000);
-//
-//  // tag is mostly vertical; try to get GPS and send
-//  if(accelX>130){
-//    gpsGetTimeLatLon();
-//    makeDataPacket();
-//    if(sendIridium){
-//      sendDataPacket();
+//  SerialUSB.print(accelX);
+//  SerialUSB.print(' ');
+//  SerialUSB.print(accelY);
+//  SerialUSB.print(' ');
+//  SerialUSB.print(accelZ);
+//  SerialUSB.print(' ');
+//  SerialUSB.print(readVoltage());
+//  SerialUSB.println('V');
+
+  intCounter++;
+  // tag is mostly vertical; try to get GPS and send
+  if(accelX>130 & intCounter>nInterrupts){
+    intCounter = 0;
+//    if(printDiags){
+//      USBDevice.attach();
+//      while(!SerialUSB);
 //    }
-//  }
+    digitalWrite(iPow, HIGH);  // Iridium on
+    digitalWrite(iEnable, HIGH);
+    gpsGetTimeLatLon();
+    makeDataPacket();
+    if(sendIridium){
+      sendDataPacket();
+    }
+    digitalWrite(iPow, LOW);  // Iridium off
+    digitalWrite(iEnable, LOW);
+//    if(printDiags){
+//      USBDevice.detach();
+//    }
+  }
 //  USBDevice.detach();
-//  digitalWrite(ledGreen, LED_OFF);
-//   LowPower.standby();
-//  // .... Sleeping ... //
+  digitalWrite(ledGreen, LED_OFF);
+  LowPower.standby();
+  // .... Sleeping ... //
 //  USBDevice.attach();
 //  while(!SerialUSB);
 }
@@ -200,7 +218,5 @@ void getTime(){
 
 void wakeUp(){
   digitalWrite(ledGreen, LED_ON);
-  delay(100);
-  digitalWrite(ledGreen, LED_OFF);
   Read_Accel_Int(ADXL343_ADDRESS);
 }
