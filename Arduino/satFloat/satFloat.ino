@@ -32,9 +32,6 @@ boolean sendIridium = 1;
 // so 10 min = 600 s = 120 interrupts
 int nInterrupts = 120;
 
-
-
-
 // Define Serial2 to talk to GPS
 // https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports/creating-a-new-serial
 Uart Serial2 (&sercom1, 11, 10, SERCOM_RX_PAD_0, UART_TX_PAD_2);
@@ -150,7 +147,7 @@ void setup() {
     rtc.setDate(gpsDay, gpsMonth, gpsYear);
   }
   else{
-    while(1){
+    for(int i=0; i<1000; i++){
       digitalWrite(ledGreen, LED_ON);
       delay(150);
       digitalWrite(ledGreen, LED_OFF);
@@ -163,6 +160,7 @@ void setup() {
   accelInit(ADXL343_ADDRESS, 0, 0);
   attachInterrupt(ACCELINT1, wakeUp, HIGH);
   Read_Accel_Int(ADXL343_ADDRESS);
+  digitalWrite(ledGreen, LED_OFF);
 }
 
 
@@ -174,7 +172,7 @@ void loop() {
 //  SerialUSB.print(accelY);
 //  SerialUSB.print(' ');
 //  SerialUSB.print(accelZ);
-//  SerialUSB.print(' ');
+//  SerialUSB.print(' '); 
 //  SerialUSB.print(readVoltage());
 //  SerialUSB.println('V');
 
@@ -182,6 +180,7 @@ void loop() {
   // tag is mostly vertical; try to get GPS and send
   if(accelX>130 & intCounter>nInterrupts){
     intCounter = 0;
+    digitalWrite(ledGreen, LED_ON);
 
     digitalWrite(iPow, HIGH);  // Iridium on
     digitalWrite(iEnable, HIGH);
