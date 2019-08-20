@@ -8,7 +8,7 @@ void makeDataPacket(){
 //  dataPacket += packetTime;
 //  dataPacket += ";";
   dataPacket = "";
-  dataPacket += "RB0012628";  // deliver to this Rockblock
+  dataPacket += "RB0012628 ";  // deliver to this Rockblock
   dataPacket += String(latitude, 4);
   dataPacket += ";";
   dataPacket += String(longitude, 4);

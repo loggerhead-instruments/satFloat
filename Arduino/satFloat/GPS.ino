@@ -72,7 +72,7 @@ int gps(byte incomingByte){
           splitStr[j][k] = gpsStream[i];
         else{
           splitStr[j][k] = '\0';
-          //SerialUSB.println(splitStr[j]);
+          SerialUSB.println(splitStr[j]);
           k = -1;  // so ends up being 0 after k++
           j++;
         }
@@ -88,11 +88,11 @@ int gps(byte incomingByte){
        
        sscanf(splitStr[1], "%2d%2d%2d", &gpsHour, &gpsMinute, &gpsSecond); 
        sscanf(splitStr[2], "%s", rmcValid);
-       // sscanf(splitStr[3], "%f", &rmcLat);   
+       //sscanf(splitStr[3], "%f", &rmcLat);   
        rmcLat = strtof(splitStr[3], NULL);
        sscanf(splitStr[4], "%s", rmcLatHem);
-      // sscanf(splitStr[5], "%f", &rmcLon);  
-       rmcLon = strtof(splitStr[3], NULL); 
+       //sscanf(splitStr[5], "%f", &rmcLon);  
+       rmcLon = strtof(splitStr[5], NULL); 
        sscanf(splitStr[6], "%s", rmcLonHem);
        sscanf(splitStr[9], "%2d%2d%2d", &gpsDay, &gpsMonth, &gpsYear);
 
@@ -104,13 +104,13 @@ int gps(byte incomingByte){
         SerialUSB.println(rmcValid);
 
         SerialUSB.print("rmcLat:");
-        SerialUSB.println(rmcLat);
+        SerialUSB.println(rmcLat, 6);
 
         SerialUSB.print("rmcLatHem:");
         SerialUSB.println(rmcLatHem);
 
         SerialUSB.print("rmcLon:");
-        SerialUSB.println(rmcLon);
+        SerialUSB.println(rmcLon, 6);
 
         SerialUSB.print("rmcLonHem:");
         SerialUSB.println(rmcLonHem);

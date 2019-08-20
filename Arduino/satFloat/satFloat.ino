@@ -25,7 +25,7 @@
 #include "IridiumSBD.h"
 
 // DEV SETTINGS
-int printDiags = 0;
+int printDiags = 1;
 int sleepMode = 1;  // =1 sleep with accelerometer waking; =0 to debug
 boolean sendIridium = 1;
 // interrupt is every 5 seconds
