@@ -83,14 +83,14 @@ volatile byte year = 19;
 int16_t accelX, accelY, accelZ;
 
 void setup() {
-  delay(10000);
+  pinMode(ledGreen, OUTPUT);
+  digitalWrite(ledGreen, LED_ON);
+  delay(5000);
   SerialUSB.begin(115200);
-  delay(1000);
   SerialUSB.println("OpenSat");
-  delay(1000);
 
   analogReference(AR_DEFAULT);
-  pinMode(ledGreen, OUTPUT);
+
 
   pinMode(ACCELINT1, INPUT);
   
@@ -104,7 +104,7 @@ void setup() {
   digitalWrite(iPow, HIGH);
   digitalWrite(iEnable, HIGH);
   delay(3000);
-  digitalWrite(ledGreen, LED_ON);
+
   
   Serial1.begin(19200);  //Iridium
 
