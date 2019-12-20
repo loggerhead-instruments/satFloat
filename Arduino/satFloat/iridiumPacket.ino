@@ -10,7 +10,7 @@ void makeDataPacket(){
   dataPacket = "";
   dataPacket += "RB0012628 ";  // deliver to this Rockblock
   dataPacket += String(latitude, 4);
-  dataPacket += ";";
+  dataPacket += " ";
   dataPacket += String(longitude, 4);
   SerialUSB.println(dataPacket);
 }
