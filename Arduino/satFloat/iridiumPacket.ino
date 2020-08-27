@@ -9,6 +9,8 @@ void makeDataPacket(){
 //  dataPacket += ";";
   dataPacket = "";
   dataPacket += "RB0012628 ";  // deliver to this Rockblock
+  dataPacket += serial;
+  dataPacket += " ";
   dataPacket += String(latitude, 4);
   dataPacket += " ";
   dataPacket += String(longitude, 4);

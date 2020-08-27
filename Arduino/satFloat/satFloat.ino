@@ -2,9 +2,18 @@
 // Loggerhead Instruments
 // c 2019
 
+// GPS wiring
+// TX GPS board to TX on OpenSat
+// RX GPS board to RX on OpenSate
+
+
+
 // Iridium ISU module needs to be configured for 3-wire (UART) operation
+// Baud 19200
 // Configuration is done using serial connection (e.g. FTDI board)
 // Connections: TX-TX, RX-RX, DTR-DTR, CTS-CTS, GND-SG (signal ground)
+// Can use Rockblock board with their USB cable and Serial Monitor of Arduino IDE set to Carriage return
+
 // AT&D0   (ignore DTR)
 // AT&K0   (ignore CTS)
 // AT&W0   (store active configuration to memory)
@@ -31,6 +40,7 @@ boolean sendIridium = 1;
 // interrupt is every 5 seconds
 // so 10 min = 600 s = 120 interrupts
 int nInterrupts = 120;
+char serial[15];
 
 // Define Serial2 to talk to GPS
 // https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports/creating-a-new-serial
@@ -87,7 +97,9 @@ void setup() {
   digitalWrite(ledGreen, LED_ON);
   delay(5000);
   SerialUSB.begin(115200);
+  delay(1000);
   SerialUSB.println("OpenSat");
+  delay(1000);
 
   analogReference(AR_DEFAULT);
 
@@ -108,16 +120,30 @@ void setup() {
   
   Serial1.begin(19200);  //Iridium
 
-// Quick Iridium modem test
+// Get IMEI serial number
   Serial1.write('A');
   Serial1.write('T');
+  Serial1.write('+');
+  Serial1.write('C');Serial1.write('G');Serial1.write('S');Serial1.write('N');
   Serial1.write(0x0D);
 
   delay(1000);
+
+  int i = 0;
+  boolean startSerial = 0;
   while(Serial1.available()){
     byte data = Serial1.read();
+    if(data == '3' | startSerial){
+      if(i<15) serial[i] = data;
+      i++;
+      startSerial = 1;
+    }
     SerialUSB.write(data);
   }
+
+  SerialUSB.println();
+  SerialUSB.println(serial);
+  delay(1000);
   
   //modem.setPowerProfile(IridiumSBD::DEFAULT_POWER_PROFILE);
   int result = modem.begin();
